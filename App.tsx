@@ -8,254 +8,223 @@ import {
 } from 'lucide-react';
 import WebApp from '@twa-dev/sdk';
 
-// Утилита для классов
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
-}
+// --- Утилиты и Данные ---
+const cn = (...inputs: any[]) => inputs.filter(Boolean).join(' ');
 
-// Данные
 const MOCK_LEADERBOARD = [
-  { name: "Сомнамбула", streak: 42 },
-  { name: "Мечтатель99", streak: 38 },
-  { name: "НочнаяСова", streak: 31 },
-  { name: "СомнаПро", streak: 28 },
-  { name: "ЛюбительЛуны", streak: 24 },
+  { name: "Сомнамбула", streak: 42 }, { name: "Мечтатель99", streak: 38 },
+  { name: "НочнаяСова", streak: 31 }, { name: "СомнаПро", streak: 28 }
 ];
 
 const MOTIVATIONAL_PHRASES = [
   "Сон — это лучшая медитация.", "Каждая ночь — это шанс начать все сначала.",
-  "Твой мозг благодарит тебя за отдых.", "Завтрашний успех начинается сегодня сегодня.",
-  "Спи крепко, мечтай масштабно.", "Тишина — это музыка для души."
+  "Твой мозг благодарит тебя за отдых.", "Завтрашний успех начинается сегодня вечером."
 ];
 
 const RANKS = [
-  { name: "Новичок", color: "#94a3b8" }, { name: "Исследователь", color: "#38bdf8" },
+  { name: "Новичок", color: "#94a3b8" }, { name: "Исследователь снов", color: "#38bdf8" },
   { name: "Мастер покоя", color: "#4ade80" }, { name: "Хранитель ночи", color: "#818cf8" },
-  { name: "Лунный странник", color: "#c084fc" }, { name: "Легенда SOMNA", color: "#00f3ff" }
+  { name: "Лунный странник", color: "#c084fc" }, { name: "Звездный навигатор", color: "#fb7185" },
+  { name: "Творец сновидений", color: "#fb923c" }, { name: "Повелитель тишины", color: "#2dd4bf" },
+  { name: "Архитектор сна", color: "#a78bfa" }, { name: "Вечный мечтатель", color: "#f472b6" },
+  { name: "Провидец сумерек", color: "#fbbf24" }, { name: "Легенда SOMNA", color: "#00f3ff" },
+  { name: "Властелин астрала", color: "#bc13fe" }, { name: "Космический спящий", color: "#ffffff" },
+  { name: "Божество снов", color: "#ffd700" }
 ];
 
 // --- Компоненты ---
 
-const BackgroundMesh = memo(() => (
-  <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 bg-[#050510]">
-    <div className="mesh-blob w-[150%] h-[150%] -top-[25%] -left-[25%] bg-neon-blue/20 animate-mesh" />
-    <div className="mesh-blob w-[130%] h-[130%] -bottom-[30%] -right-[20%] bg-neon-purple/20 animate-mesh" style={{ animationDelay: '-5s' }} />
-  </div>
-));
+const Cube3D = memo(({ isActivated }: { isActivated: boolean }) => {
+  const [rotation, setRotation] = useState({ x: -20, y: 45 });
+  const [isDragging, setIsDragging] = useState(false);
+  const lastPos = useRef({ x: 0, y: 0 });
 
-const RatingSlider = memo(({ value, onChange, label, moods, colorClass, glowColor }: any) => {
-  const currentMood = moods[Math.min(Math.floor((value - 1) / 10 * moods.length), moods.length - 1)];
+  const handleStart = (e: any) => {
+    setIsDragging(true);
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    lastPos.current = { x: clientX, y: clientY };
+  };
+
+  const handleMove = useCallback((e: any) => {
+    if (!isDragging) return;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    setRotation(prev => ({ 
+      x: prev.x - (clientY - lastPos.current.y) * 0.5, 
+      y: prev.y + (clientX - lastPos.current.x) * 0.5 
+    }));
+    lastPos.current = { x: clientX, y: clientY };
+  }, [isDragging]);
+
+  useEffect(() => {
+    if (isDragging) {
+      const end = () => setIsDragging(false);
+      window.addEventListener('mousemove', handleMove);
+      window.addEventListener('mouseup', end);
+      window.addEventListener('touchmove', handleMove);
+      window.addEventListener('touchend', end);
+      return () => {
+        window.removeEventListener('mousemove', handleMove);
+        window.removeEventListener('mouseup', end);
+        window.removeEventListener('touchmove', handleMove);
+        window.removeEventListener('touchend', end);
+      };
+    }
+  }, [isDragging, handleMove]);
+
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-end">
-        <div className="flex flex-col">
-          <label className="text-[10px] uppercase tracking-widest text-white/60 font-bold">{label}</label>
-          <div className="text-[9px] text-white/30 italic">{currentMood}</div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className={cn("text-2xl font-mono font-bold", colorClass)}>{value}</span>
-          <span className="text-[10px] text-white/20">/10</span>
-        </div>
-      </div>
-      <div className="relative h-8 flex items-center group">
-        <div className="absolute w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-          <motion.div className={cn("h-full", glowColor)} animate={{ width: `${(value / 10) * 100}%` }} />
-        </div>
-        <input type="range" min="1" max="10" value={value} 
-               onChange={(e) => { onChange(parseInt(e.target.value)); WebApp.HapticFeedback.impactOccurred('light'); }}
-               className="absolute w-full h-8 opacity-0 cursor-pointer z-10" />
-      </div>
+    <div className="w-64 h-64 flex items-center justify-center cursor-grab active:cursor-grabbing"
+         onMouseDown={handleStart} onTouchStart={handleStart} style={{ perspective: '1000px' }}>
+      <motion.div className="relative w-32 h-32" style={{ transformStyle: 'preserve-3d', rotateX: rotation.x, rotateY: rotation.y }}>
+        {[0, 180, 90, -90, 90, -90].map((rot, i) => (
+          <div key={i} className="absolute inset-0 border border-white/20 flex items-center justify-center bg-white/5 backdrop-blur-sm"
+               style={{ 
+                 transform: `rotate${i < 4 ? 'Y' : 'X'}(${rot}deg) translateZ(64px)`,
+                 boxShadow: isActivated ? 'inset 0 0 30px rgba(0, 243, 255, 0.4)' : 'none'
+               }}>
+            <div className={cn("w-2 h-2 rounded-full", isActivated ? "bg-neon-blue shadow-[0_0_10px_#00f3ff]" : "bg-white/10")} />
+          </div>
+        ))}
+      </motion.div>
     </div>
   );
 });
 
-// --- Главное приложение ---
+const RatingSlider = ({ value, onChange, label, moods, colorClass, glowColor }: any) => (
+  <div className="space-y-4">
+    <div className="flex justify-between items-center">
+      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{label}</label>
+      <span className={cn("text-xl font-mono font-bold", colorClass)}>{value}/10</span>
+    </div>
+    <input type="range" min="1" max="10" value={value} onChange={(e) => onChange(parseInt(e.target.value))}
+           className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-white" />
+  </div>
+);
+
+// --- Основной экран ---
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [nickname, setNickname] = useState<string | null>(null);
   const [tempNickname, setTempNickname] = useState('');
-  const [isNewUser, setIsNewUser] = useState(true);
+  const [isActivated, setIsActivated] = useState(false);
+  const [streakCount, setStreakCount] = useState(0);
+  const [showRankUpAnim, setShowRankUpAnim] = useState(false);
   
-  // Состояния дневника
   const [gratitude, setGratitude] = useState('');
   const [advice, setAdvice] = useState('');
-  const [showHistory, setShowHistory] = useState(false);
   const [ritualEntries, setRitualEntries] = useState<any[]>([]);
-  
-  // Состояния опроса
-  const [showSurvey, setShowSurvey] = useState(false);
-  const [sleepQuality, setSleepQuality] = useState(5);
-  const [fallingAsleepQuality, setFallingAsleepQuality] = useState(5);
-  const [somnaInfluence, setSomnaInfluence] = useState(5);
-
-  const [streakCount, setStreakCount] = useState(0);
-  const [batteryLevel] = useState(85);
 
   useEffect(() => {
     WebApp.ready();
-    WebApp.expand();
-    
-    const savedNick = localStorage.getItem('somna_nickname_v3');
-    const savedEntries = localStorage.getItem('somna_rituals_v3');
-    
-    if (savedNick) {
-      setNickname(savedNick);
-      setIsNewUser(false);
-    }
-    if (savedEntries) setRitualEntries(JSON.parse(savedEntries));
+    const saved = localStorage.getItem('somna_nickname_v3');
+    if (saved) setNickname(saved);
     setStreakCount(parseInt(localStorage.getItem('somna_streak_v3') || '0'));
   }, []);
 
-  const handleSetNickname = () => {
-    if (tempNickname.length >= 3) {
-      setNickname(tempNickname);
-      setIsNewUser(false);
-      localStorage.setItem('somna_nickname_v3', tempNickname);
-      WebApp.HapticFeedback.notificationOccurred('success');
-    }
+  const getRank = (s: number) => {
+    const idx = s < 35 ? Math.min(Math.floor(s / 7), 4) : Math.min(5 + Math.floor((s - 35) / 14), RANKS.length - 1);
+    return RANKS[idx];
   };
 
-  const saveRitual = () => {
-    const newEntry = {
-      id: Date.now().toString(),
-      date: new Date().toLocaleDateString('ru-RU'),
-      gratitude,
-      advice,
-      sleepQuality,
-      fallingAsleepQuality,
-      somnaInfluence
-    };
-    
-    const updated = [newEntry, ...ritualEntries];
-    setRitualEntries(updated);
-    localStorage.setItem('somna_rituals_v3', JSON.stringify(updated));
-    setStreakCount(prev => prev + 1);
-    localStorage.setItem('somna_streak_v3', (streakCount + 1).toString());
-    
+  const handleSave = () => {
+    if (!gratitude.trim()) return;
+    const newStreak = streakCount + 1;
+    setStreakCount(newStreak);
+    localStorage.setItem('somna_streak_v3', newStreak.toString());
+    setRitualEntries([{ id: Date.now(), gratitude, date: 'Сегодня' }, ...ritualEntries]);
     setGratitude('');
-    setAdvice('');
-    setShowSurvey(true);
+    if (newStreak % 7 === 0) setShowRankUpAnim(true);
     WebApp.HapticFeedback.notificationOccurred('success');
   };
 
-  const currentRank = useMemo(() => {
-    const idx = Math.min(Math.floor(streakCount / 7), RANKS.length - 1);
-    return RANKS[idx];
-  }, [streakCount]);
+  if (!nickname) {
+    return (
+      <div className="min-h-screen bg-[#050510] flex flex-col items-center justify-center p-8 text-center space-y-8">
+        <Zap className="w-16 h-16 text-neon-blue animate-pulse" />
+        <h2 className="text-2xl font-bold">Как тебя называть?</h2>
+        <input value={tempNickname} onChange={e => setTempNickname(e.target.value)} 
+               className="w-full max-w-xs bg-white/5 border border-white/10 p-4 rounded-2xl text-center" />
+        <button onClick={() => { setNickname(tempNickname); localStorage.setItem('somna_nickname_v3', tempNickname); }}
+                className="px-12 py-4 bg-white text-black rounded-full font-bold">НАЧАТЬ</button>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative min-h-screen flex flex-col text-white custom-scrollbar">
-      <BackgroundMesh />
-      
-      <header className="relative z-20 p-6 flex justify-between items-center bg-black/20 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <Zap className="w-6 h-6 text-neon-blue" />
-          <h1 className="text-xl font-black tracking-tighter neon-text-blue">SOMNA</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <p className="text-[10px] font-bold text-white/40 uppercase">Заряд</p>
-            <p className="text-xs font-mono font-bold text-neon-blue">{batteryLevel}%</p>
-          </div>
-          <BatteryIcon className="w-5 h-5 text-white/20" />
-        </div>
-      </header>
-
-      <main className="relative z-10 flex-1 p-6 pb-32">
-        <AnimatePresence mode="wait">
-          {isNewUser ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center h-full text-center space-y-8">
-              <div className="w-20 h-20 rounded-3xl bg-neon-blue/20 flex items-center justify-center animate-breathe">
-                <User className="w-10 h-10 text-neon-blue" />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold">Добро пожаловать</h2>
-                <p className="text-white/40">Введи свой никнейм для начала пути</p>
-              </div>
-              <input 
-                value={tempNickname} onChange={(e) => setTempNickname(e.target.value)}
-                className="w-full max-w-xs bg-white/5 border border-white/10 p-4 rounded-2xl text-center outline-none focus:border-neon-blue transition-all"
-                placeholder="Твой ник..."
-              />
-              <button onClick={handleSetNickname} className="w-full max-w-xs py-4 bg-white text-black rounded-2xl font-bold uppercase tracking-widest">Войти</button>
-            </motion.div>
-          ) : activeTab === 'dashboard' ? (
-            <motion.div key="dash" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-               <div className="text-center space-y-2">
-                <h2 className="text-sm uppercase tracking-[0.2em] text-white/40">Привет, {nickname}</h2>
-                <div className="flex items-center justify-center gap-3">
-                  <Flame className="w-8 h-8 text-neon-blue animate-pulse" />
-                  <span className="text-6xl font-black font-mono neon-text-blue">{streakCount}</span>
-                </div>
-                <p className="text-[10px] font-bold text-neon-purple uppercase tracking-widest">{currentRank.name}</p>
-              </div>
-
-              <div className="glass-card p-6 rounded-[32px] text-center italic text-white/70">
-                "{MOTIVATIONAL_PHRASES[streakCount % MOTIVATIONAL_PHRASES.length]}"
-              </div>
-            </motion.div>
-          ) : activeTab === 'diary' ? (
-            <motion.div key="diary" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-              <h2 className="text-3xl font-bold neon-text-purple">Дневник</h2>
-              <div className="glass-card p-6 rounded-[32px] space-y-4">
-                <textarea 
-                  value={gratitude} onChange={(e) => setGratitude(e.target.value)}
-                  placeholder="За что ты благодарен сегодня?"
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 min-h-[100px] outline-none text-sm"
-                />
-                <textarea 
-                  value={advice} onChange={(e) => setAdvice(e.target.value)}
-                  placeholder="Совет себе на завтра..."
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 min-h-[100px] outline-none text-sm"
-                />
-                <button onClick={saveRitual} className="w-full py-4 bg-neon-blue text-black rounded-2xl font-bold uppercase tracking-widest shadow-[0_0_20px_rgba(0,243,255,0.3)]">
-                  Сохранить
-                </button>
-              </div>
-            </motion.div>
-          ) : (
-            <div className="flex items-center justify-center h-full text-white/20 uppercase tracking-widest font-bold">
-              В разработке...
-            </div>
-          )}
-        </AnimatePresence>
-      </main>
-
-      {/* Навигация */}
-      <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-50">
-        <div className="glass-card rounded-full p-2 flex justify-between items-center border border-white/10 backdrop-blur-3xl">
-          {[
-            { id: 'dashboard', icon: Zap },
-            { id: 'diary', icon: BookOpen },
-            { id: 'leaderboard', icon: Trophy },
-            { id: 'settings', icon: Settings }
-          ].map((item) => (
-            <button 
-              key={item.id} onClick={() => { setActiveTab(item.id); WebApp.HapticFeedback.impactOccurred('medium'); }}
-              className={cn(
-                "w-14 h-14 rounded-full flex items-center justify-center transition-all",
-                activeTab === item.id ? "bg-white text-black" : "text-white/40"
-              )}
-            >
-              <item.icon size={24} />
-            </button>
-          ))}
-        </div>
-      </nav>
-
-      {/* Модалка опроса */}
+    <div className="min-h-screen bg-[#050510] text-white flex flex-col overflow-hidden">
+      {/* Анимация Ранга */}
       <AnimatePresence>
-        {showSurvey && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6">
-            <div className="glass-card w-full max-w-sm p-8 rounded-[40px] space-y-8">
-              <h3 className="text-2xl font-bold text-center neon-text-blue">Как самочувствие?</h3>
-              <RatingSlider label="Качество сна" value={sleepQuality} onChange={setSleepQuality} colorClass="text-neon-blue" glowColor="bg-neon-blue" moods={["Ужасно", "Ок", "Идеально"]} />
-              <button onClick={() => setShowSurvey(false)} className="w-full py-4 bg-white text-black rounded-2xl font-bold">ЗАКРЫТЬ</button>
-            </div>
+        {showRankUpAnim && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+                      className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-8">
+            <Trophy className="w-24 h-24 text-amber-500 mb-6 shadow-[0_0_50px_rgba(245,158,11,0.5)]" />
+            <h2 className="text-4xl font-black italic mb-4">НОВЫЙ РАНГ!</h2>
+            <p className="text-2xl text-neon-blue uppercase font-bold">{getRank(streakCount).name}</p>
+            <button onClick={() => setShowRankUpAnim(false)} className="mt-12 px-8 py-3 bg-white text-black rounded-full font-bold">КРУТО</button>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <header className="p-6 flex justify-between items-center z-10 bg-black/40 backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <Zap className="w-5 h-5 text-neon-blue" />
+          <span className="font-black tracking-tighter text-xl neon-text-blue">SOMNA</span>
+        </div>
+        <div className="flex flex-col items-end">
+          <span className="text-[10px] font-bold text-white/30 uppercase">Дисциплина</span>
+          <div className="flex items-center gap-1 text-neon-blue font-mono font-bold">
+            <Flame size={14} /> {streakCount}
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-y-auto p-6 pb-32">
+        {activeTab === 'dashboard' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center space-y-8">
+            <div className="text-center pt-4">
+              <p className="text-white/40 text-xs uppercase tracking-widest font-bold mb-1" style={{ color: getRank(streakCount).color }}>{getRank(streakCount).name}</p>
+              <h2 className="text-2xl font-bold">Спокойной ночи, {nickname}</h2>
+            </div>
+            
+            <Cube3D isActivated={isActivated} />
+
+            <button onClick={() => { setIsActivated(!isActivated); WebApp.HapticFeedback.impactOccurred('heavy'); }}
+                    className={cn("w-20 h-20 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl", 
+                               isActivated ? "bg-neon-blue text-black scale-110 shadow-[0_0_40px_#00f3ff]" : "bg-white/5 text-white border border-white/10")}>
+              <Power size={32} />
+            </button>
+
+            <p className="text-center text-sm text-white/40 italic px-8">"{MOTIVATIONAL_PHRASES[streakCount % 4]}"</p>
+          </motion.div>
+        )}
+
+        {activeTab === 'diary' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+            <h2 className="text-3xl font-bold neon-text-purple">Ритуал</h2>
+            <div className="glass-card p-6 rounded-[32px] space-y-4">
+              <label className="text-[10px] uppercase font-bold text-white/30">За что благодарен сегодня?</label>
+              <textarea value={gratitude} onChange={e => setGratitude(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 min-h-[120px] outline-none text-sm focus:border-neon-blue" />
+              <button onClick={handleSave} className="w-full py-4 bg-white text-black rounded-2xl font-bold uppercase tracking-widest">ЗАПИСАТЬ</button>
+            </div>
+          </motion.div>
+        )}
+      </main>
+
+      <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-sm glass-card rounded-full p-2 flex justify-between items-center z-50 border border-white/10">
+        {[
+          { id: 'dashboard', icon: Zap }, { id: 'diary', icon: BookOpen },
+          { id: 'leaderboard', icon: Trophy }, { id: 'settings', icon: Settings }
+        ].map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  className={cn("w-12 h-12 rounded-full flex items-center justify-center transition-all", 
+                             activeTab === tab.id ? "bg-white text-black" : "text-white/40")}>
+            <tab.icon size={20} />
+          </button>
+        ))}
+      </nav>
     </div>
   );
 };
