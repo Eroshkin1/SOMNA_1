@@ -1,74 +1,16 @@
 @import "tailwindcss";
 
 @theme {
-  /* Твои фирменные цвета */
   --color-primary: #2111d4;
   --color-accent-yellow: #FFD95A;
-  --color-background-dark: #000a1a;
+  --color-background-dark: #000000;
   --color-neon-purple: #bc13fe;
   --color-neon-blue: #00f3ff;
-  
-  /* Добавляем кастомные анимации в тему Tailwind */
-  --animate-breathe: breathe 5s ease-in-out infinite;
-  --animate-shimmer: shimmer 2s infinite;
-  --animate-led: led-blink 0.3s ease-in-out 3;
-  --animate-mesh: mesh-move 20s infinite alternate ease-in-out;
 }
 
-/* Эффекты свечения для текста */
-.neon-text-blue {
-  text-shadow: 0 0 10px var(--color-neon-blue), 0 0 20px var(--color-neon-blue);
-}
-
-.neon-text-purple {
-  text-shadow: 0 0 10px var(--color-neon-purple), 0 0 20px var(--color-neon-purple);
-}
-
-/* Тот самый Glassmorphism */
-.glass-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
-}
-
-/* Меш-блобы для заднего фона */
-.mesh-blob {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.3;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Базовые настройки страницы под Telegram */
-body {
-  background-color: #050510; /* Чуть темнее для контраста с неоном */
-  color: #ffffff;
-  font-family: 'Lexend', sans-serif;
-  overflow-x: hidden;
-  /* Убираем синее выделение при клике на мобилках */
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  scroll-behavior: smooth;
-  min-height: 100vh;
-}
-
-/* Скрываем скроллбар, но оставляем прокрутку */
-.custom-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.custom-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Ключевые кадры анимаций */
 @keyframes breathe {
-  0%, 100% { opacity: 0.5; transform: scale(1); filter: blur(40px); }
-  50% { opacity: 0.8; transform: scale(1.1); filter: blur(60px); }
+  0%, 100% { opacity: 0.6; transform: scale(1); filter: blur(40px); }
+  50% { opacity: 0.9; transform: scale(1.1); filter: blur(60px); }
 }
 
 @keyframes shimmer {
@@ -77,13 +19,64 @@ body {
 }
 
 @keyframes led-blink {
-  0%, 100% { opacity: 0.2; }
-  50% { opacity: 1; box-shadow: 0 0 15px var(--color-neon-blue); }
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; box-shadow: 0 0 20px var(--color-neon-blue); }
+}
+
+.animate-breathe {
+  animation: breathe 5s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+.animate-led {
+  animation: led-blink 0.3s ease-in-out 3;
+}
+
+.neon-text-blue {
+  text-shadow: 0 0 10px var(--color-neon-blue), 0 0 20px var(--color-neon-blue);
+}
+
+.neon-text-purple {
+  text-shadow: 0 0 10px var(--color-neon-purple), 0 0 20px var(--color-neon-purple);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(32px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
 }
 
 @keyframes mesh-move {
   0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-  33% { transform: translate(5%, 5%) scale(1.05) rotate(2deg); }
-  66% { transform: translate(-3%, 8%) scale(0.95) rotate(-2deg); }
+  33% { transform: translate(10%, 10%) scale(1.1) rotate(5deg); }
+  66% { transform: translate(-5%, 15%) scale(0.9) rotate(-5deg); }
   100% { transform: translate(0, 0) scale(1) rotate(0deg); }
 }
+
+.mesh-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.4;
+  animation: mesh-move 20s infinite alternate ease-in-out;
+  pointer-events: none;
+}
+
+body {
+  background-color: #0a0a1a;
+  color: #fff;
+  font-family: 'Lexend', sans-serif;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+  width: 0px;
+}
+
